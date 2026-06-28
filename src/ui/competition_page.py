@@ -33,6 +33,7 @@ from ui.participants_tab import ParticipantsTab
 from ui.ships_tab import ShipsTab
 from ui.stand_tab import StandTab
 from ui.start_tab import StartTab
+from ui.summary_tab import SummaryTab
 
 
 class CompetitionPage(QWidget):
@@ -114,6 +115,7 @@ class CompetitionPage(QWidget):
         self.ships_tab = ShipsTab(app_window)
         self.stand_tab = StandTab(app_window)
         self.start_tab = StartTab(app_window)
+        self.summary_tab = SummaryTab(app_window)
 
         self.tab_order = [
             self.groups_tab,
@@ -125,6 +127,7 @@ class CompetitionPage(QWidget):
             self.ships_tab,
             self.stand_tab,
             self.start_tab,
+            self.summary_tab,
         ]
 
         self.tab_titles = {
@@ -137,6 +140,7 @@ class CompetitionPage(QWidget):
             self.ships_tab: "Судна",
             self.stand_tab: "Стенд",
             self.start_tab: "Стартовый",
+            self.summary_tab: "Сводная таблица",
         }
 
         self.tabs.addTab(self.groups_tab, "Группы")
@@ -148,6 +152,7 @@ class CompetitionPage(QWidget):
         self.tabs.addTab(self.ships_tab, "Судна")
         self.tabs.addTab(self.stand_tab, "Стенд")
         self.tabs.addTab(self.start_tab, "Стартовый")
+        self.tabs.addTab(self.summary_tab, "Сводная таблица")
 
         self.tabs.currentChanged.connect(self.on_tab_changed)
 
@@ -174,6 +179,8 @@ class CompetitionPage(QWidget):
         self.ships_tab.load_ships()
         self.stand_tab.load_stand_protocols()
         self.start_tab.load_start_protocols()
+        self.summary_tab.load_filter_values()
+        self.summary_tab.load_summary()
 
     def on_tab_changed(self, index):
         current_widget = self.tabs.widget(index)
@@ -302,6 +309,12 @@ class CompetitionPage(QWidget):
             visible_tabs = [
                 self.stand_tab,
                 self.start_tab,
+                self.summary_tab,
+            ]
+
+        elif status == COMPETITION_STATUS_SECONDARY_PROTOCOLS:
+            visible_tabs = [
+                self.summary_tab,
             ]
             
         else:
