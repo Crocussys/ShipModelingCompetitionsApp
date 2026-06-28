@@ -5,9 +5,16 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QComboBox,
     QDialogButtonBox,
+    QHBoxLayout,
+    QPushButton,
+    QInputDialog,
+    QMessageBox,
 )
 
-from database import get_ship_categories
+from database import (
+    get_ship_categories,
+    create_ship_category,
+)
 
 
 class ShipDialog(QDialog):
@@ -28,9 +35,8 @@ class ShipDialog(QDialog):
         self.scale_input = QLineEdit(scale)
 
         self.category_combo = QComboBox()
-
-        for current_category_id, category_name in get_ship_categories():
-            self.category_combo.addItem(category_name, current_category_id)
+        self.add_category_button = QPushButton("Новая категория")
+        self.add_category_button.clicked.connect(self.add_category)
 
         if category_id is not None:
             index = self.category_combo.findData(category_id)
@@ -40,7 +46,12 @@ class ShipDialog(QDialog):
         form_layout = QFormLayout()
         form_layout.addRow("Название:", self.name_input)
         form_layout.addRow("Модель:", self.model_input)
-        form_layout.addRow("Категория:", self.category_combo)
+        
+        category_layout = QHBoxLayout()
+        category_layout.addWidget(self.category_combo)
+        category_layout.addWidget(self.add_category_button)
+
+        form_layout.addRow("Категория:", category_layout)
         form_layout.addRow("Масштаб:", self.scale_input)
 
         buttons = QDialogButtonBox(
@@ -57,6 +68,8 @@ class ShipDialog(QDialog):
 
         self.setLayout(layout)
 
+        self.load_categories(selected_category_id=category_id)
+
     def get_data(self):
         return (
             self.name_input.text().strip(),
@@ -64,3 +77,38 @@ class ShipDialog(QDialog):
             self.category_combo.currentData(),
             self.scale_input.text().strip(),
         )
+    
+    def load_categories(self, selected_category_id=None):
+        self.category_combo.clear()
+
+        for category_id, category_name in get_ship_categories():
+            self.category_combo.addItem(category_name, category_id)
+
+        if selected_category_id is not None:
+            index = self.category_combo.findData(selected_category_id)
+            if index >= 0:
+                self.category_combo.setCurrentIndex(index)
+
+
+    def add_category(self):
+        name, ok = QInputDialog.getText(
+            self,
+            "Новая категория",
+            "Введите название категории:"
+        )
+
+        name = name.strip()
+
+        if not ok or not name:
+            return
+
+        try:
+            category_id = create_ship_category(name)
+            self.load_categories(selected_category_id=category_id)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось создать категорию:\n\n{error}"
+            )

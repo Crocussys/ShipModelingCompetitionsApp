@@ -123,6 +123,11 @@ class JudgesTab(QWidget):
 
     def load_judges(self):
         competition_id = self.app_window.selected_competition_id
+
+        if competition_id is None:
+            self.table.setRowCount(0)
+            return
+
         search = self.search_input.text()
 
         if self.show_all_radio.isChecked():
@@ -130,6 +135,8 @@ class JudgesTab(QWidget):
                 competition_id=None,
                 search=search
             )
+
+            self.table.setColumnHidden(0, False)
 
             self.table.setColumnCount(4)
             self.table.setHorizontalHeaderLabels([
@@ -162,8 +169,9 @@ class JudgesTab(QWidget):
                 search=search
             )
 
-            self.table.setColumnCount(4)
+            self.table.setColumnCount(5)
             self.table.setHorizontalHeaderLabels([
+                "ID назначения",
                 "ID",
                 "ФИО",
                 "Кратко",
@@ -172,11 +180,20 @@ class JudgesTab(QWidget):
 
             self.table.setRowCount(len(judges))
 
-            for row_index, (judge_id, full_name, short_name, role) in enumerate(judges):
-                self.table.setItem(row_index, 0, QTableWidgetItem(str(judge_id)))
-                self.table.setItem(row_index, 1, QTableWidgetItem(full_name))
-                self.table.setItem(row_index, 2, QTableWidgetItem(short_name))
-                self.table.setItem(row_index, 3, QTableWidgetItem(get_judge_role_name(role)))
+            for row_index, (
+                competition_judge_id,
+                judge_id,
+                full_name,
+                short_name,
+                role,
+            ) in enumerate(judges):
+                self.table.setItem(row_index, 0, QTableWidgetItem(str(competition_judge_id)))
+                self.table.setItem(row_index, 1, QTableWidgetItem(str(judge_id)))
+                self.table.setItem(row_index, 2, QTableWidgetItem(full_name))
+                self.table.setItem(row_index, 3, QTableWidgetItem(short_name))
+                self.table.setItem(row_index, 4, QTableWidgetItem(get_judge_role_name(role)))
+
+            self.table.setColumnHidden(0, True)
 
         self.table.resizeColumnsToContents()
 
@@ -245,19 +262,18 @@ class JudgesTab(QWidget):
         self.show_competition_judge(judge_id)
 
     def remove_selected_judge(self):
-        judge_id = self.get_selected_judge_id()
+        competition_judge_id = self.get_selected_judge_id()
 
-        if judge_id is None:
+        if competition_judge_id is None:
             return
 
-        remove_judge_from_competition(
-            judge_id,
-            self.app_window.selected_competition_id
-        )
+        remove_judge_from_competition(competition_judge_id)
 
         self.load_judges()
 
     def edit_selected_judge(self):
+        if not self.show_all_radio.isChecked():
+            return
         judge_id = self.get_selected_judge_id()
 
         if judge_id is None:
@@ -324,9 +340,9 @@ class JudgesTab(QWidget):
         self.load_judges()
 
         for row in range(self.table.rowCount()):
-            if int(self.table.item(row, 0).text()) == judge_id:
+            if int(self.table.item(row, 1).text()) == judge_id:
                 self.table.selectRow(row)
-                self.table.scrollToItem(self.table.item(row, 0))
+                self.table.scrollToItem(self.table.item(row, 1))
                 break
     
     def select_judge_role(self) -> int | None:

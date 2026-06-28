@@ -66,5 +66,14 @@ class CompetitionPage(QWidget):
         if hasattr(current_widget, "reset_mode"):
             current_widget.reset_mode()
 
+        if hasattr(current_widget, "load_groups"):
+            current_widget.load_groups()
+
+        if hasattr(current_widget, "load_categories"):
+            current_widget.load_categories()
+
+        if hasattr(current_widget, "load_districts"):
+            current_widget.load_districts()
+
     def go_back(self):
         self.app_window.show_select_page()

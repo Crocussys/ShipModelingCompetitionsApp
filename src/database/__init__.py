@@ -8,3 +8,4 @@ from .districts import *
 from .teams import *
 from .participants import *
 from .ships import *
+from .stand_protocols import *

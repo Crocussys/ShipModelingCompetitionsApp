@@ -29,11 +29,12 @@ def init_database():
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS competition_judges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 judge_id INTEGER NOT NULL,
                 competition_id INTEGER NOT NULL,
                 role INTEGER NOT NULL DEFAULT 3,
 
-                PRIMARY KEY (judge_id, competition_id),
+                UNIQUE (judge_id, competition_id),
 
                 FOREIGN KEY (judge_id)
                     REFERENCES judges(id)
@@ -162,6 +163,55 @@ def init_database():
 
                 FOREIGN KEY (competition_team_participant_id)
                     REFERENCES competition_team_participants(id)
+                    ON DELETE CASCADE
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS stand_protocols (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                competition_judge_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
+                group_id INTEGER NOT NULL,
+                status INTEGER NOT NULL DEFAULT 0
+                    CHECK (status IN (0, 1, 2)),
+
+                FOREIGN KEY (competition_judge_id)
+                    REFERENCES competition_judges(id)
+                    ON DELETE RESTRICT,
+
+                FOREIGN KEY (category_id)
+                    REFERENCES ship_categories(id)
+                    ON DELETE RESTRICT,
+
+                FOREIGN KEY (group_id)
+                    REFERENCES groups(id)
+                    ON DELETE RESTRICT
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS stand_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                stand_protocol_id INTEGER NOT NULL,
+                competition_team_participant_ship_id INTEGER NOT NULL,
+
+                execution_score INTEGER NOT NULL CHECK (execution_score BETWEEN 0 AND 100),
+                impression_score INTEGER NOT NULL CHECK (impression_score BETWEEN 0 AND 100),
+                work_volume_score INTEGER NOT NULL CHECK (work_volume_score BETWEEN 0 AND 100),
+                compliance_score INTEGER NOT NULL CHECK (compliance_score BETWEEN 0 AND 100),
+
+                UNIQUE (
+                    stand_protocol_id,
+                    competition_team_participant_ship_id
+                ),
+
+                FOREIGN KEY (stand_protocol_id)
+                    REFERENCES stand_protocols(id)
+                    ON DELETE CASCADE,
+
+                FOREIGN KEY (competition_team_participant_ship_id)
+                    REFERENCES competition_team_participant_ships(id)
                     ON DELETE CASCADE
             )
         """)

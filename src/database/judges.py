@@ -28,9 +28,14 @@ def get_judges(competition_id: int | None = None, search: str = ""):
             """).fetchall()
         else:
             rows = conn.execute("""
-                SELECT j.id, j.full_name, j.short_name, cj.role
-                FROM judges j
-                JOIN competition_judges cj ON cj.judge_id = j.id
+                SELECT
+                    cj.id AS competition_judge_id,
+                    j.id AS judge_id,
+                    j.full_name,
+                    j.short_name,
+                    cj.role
+                FROM competition_judges cj
+                JOIN judges j ON j.id = cj.judge_id
                 WHERE cj.competition_id = ?
                 ORDER BY j.full_name
             """, (competition_id,)).fetchall()
@@ -38,10 +43,17 @@ def get_judges(competition_id: int | None = None, search: str = ""):
     if not search:
         return rows
 
+    if competition_id is None:
+        return [
+            row for row in rows
+            if search in row[1].casefold()
+            or search in row[2].casefold()
+        ]
+
     return [
         row for row in rows
-        if search in row[1].casefold()
-        or search in row[2].casefold()
+        if search in row[2].casefold()
+        or search in row[3].casefold()
     ]
 
 
@@ -96,13 +108,12 @@ def assign_judge_to_competition(
         """, (judge_id, competition_id, role))
 
 
-def remove_judge_from_competition(judge_id: int, competition_id: int):
+def remove_judge_from_competition(competition_judge_id: int):
     with get_connection() as conn:
         conn.execute("""
             DELETE FROM competition_judges
-            WHERE judge_id = ?
-              AND competition_id = ?
-        """, (judge_id, competition_id))
+            WHERE id = ?
+        """, (competition_judge_id,))
 
 
 def is_judge_assigned(judge_id: int, competition_id: int) -> bool:
@@ -115,3 +126,23 @@ def is_judge_assigned(judge_id: int, competition_id: int) -> bool:
         """, (judge_id, competition_id)).fetchone()
 
         return row is not None
+
+def get_competition_judges_for_combo(competition_id: int):
+    with get_connection() as conn:
+        return conn.execute("""
+            SELECT
+                cj.id,
+                j.short_name || ' — ' || 
+                CASE cj.role
+                    WHEN 1 THEN 'Главный судья'
+                    WHEN 2 THEN 'Главный судья стенда'
+                    WHEN 3 THEN 'Судья'
+                    WHEN 4 THEN 'Судья стенда'
+                    WHEN 5 THEN 'Секретарь'
+                    ELSE 'Неизвестно'
+                END
+            FROM competition_judges cj
+            JOIN judges j ON j.id = cj.judge_id
+            WHERE cj.competition_id = ?
+            ORDER BY j.full_name
+        """, (competition_id,)).fetchall()

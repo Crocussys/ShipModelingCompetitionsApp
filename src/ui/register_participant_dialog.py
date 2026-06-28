@@ -5,11 +5,15 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialogButtonBox,
     QMessageBox,
+    QHBoxLayout,
+    QPushButton,
+    QInputDialog,
 )
 
 from database import (
     get_groups,
     get_registered_competition_teams,
+    create_group,
 )
 
 
@@ -26,7 +30,15 @@ class RegisterParticipantDialog(QDialog):
 
         form_layout = QFormLayout()
         form_layout.addRow("Команда:", self.team_combo)
-        form_layout.addRow("Группа:", self.group_combo)
+        
+        self.add_group_button = QPushButton("Новая группа")
+        self.add_group_button.clicked.connect(self.add_group)
+
+        group_layout = QHBoxLayout()
+        group_layout.addWidget(self.group_combo)
+        group_layout.addWidget(self.add_group_button)
+
+        form_layout.addRow("Группа:", group_layout)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok |
@@ -42,20 +54,7 @@ class RegisterParticipantDialog(QDialog):
 
         self.setLayout(layout)
 
-        self.load_data()
-
-    def load_data(self):
-        self.team_combo.clear()
-        self.group_combo.clear()
-
-        teams = get_registered_competition_teams(self.competition_id)
-        groups = get_groups()
-
-        for competition_team_id, short_name in teams:
-            self.team_combo.addItem(short_name, competition_team_id)
-
-        for group_id, name in groups:
-            self.group_combo.addItem(name, group_id)
+        self.load_groups()
 
     def validate_and_accept(self):
         if self.team_combo.currentData() is None:
@@ -73,3 +72,38 @@ class RegisterParticipantDialog(QDialog):
             self.team_combo.currentData(),
             self.group_combo.currentData(),
         )
+    
+    def load_groups(self, selected_group_id=None):
+        self.group_combo.clear()
+
+        for group_id, name in get_groups():
+            self.group_combo.addItem(name, group_id)
+
+        if selected_group_id is not None:
+            index = self.group_combo.findData(selected_group_id)
+            if index >= 0:
+                self.group_combo.setCurrentIndex(index)
+
+
+    def add_group(self):
+        name, ok = QInputDialog.getText(
+            self,
+            "Новая группа",
+            "Введите название группы:"
+        )
+
+        name = name.strip()
+
+        if not ok or not name:
+            return
+
+        try:
+            group_id = create_group(name)
+            self.load_groups(selected_group_id=group_id)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось создать группу:\n\n{error}"
+            )
