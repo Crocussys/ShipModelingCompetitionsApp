@@ -11,7 +11,7 @@ class MainWindow(QWidget):
         self.selected_competition_id = None
 
         self.setWindowTitle("Ship modeling competitions")
-        self.resize(500, 300)
+        self.resize(1400, 800)
 
         self.stack = QStackedWidget()
 

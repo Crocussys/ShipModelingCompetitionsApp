@@ -54,6 +54,7 @@ class RegisterParticipantDialog(QDialog):
 
         self.setLayout(layout)
 
+        self.load_teams()
         self.load_groups()
 
     def validate_and_accept(self):
@@ -72,6 +73,14 @@ class RegisterParticipantDialog(QDialog):
             self.team_combo.currentData(),
             self.group_combo.currentData(),
         )
+    
+    def load_teams(self):
+        self.team_combo.clear()
+
+        for competition_team_id, short_name in get_registered_competition_teams(
+            self.competition_id
+        ):
+            self.team_combo.addItem(short_name, competition_team_id)
     
     def load_groups(self, selected_group_id=None):
         self.group_combo.clear()

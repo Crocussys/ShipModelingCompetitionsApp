@@ -15,7 +15,8 @@ def init_database():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS competitions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE
+                name TEXT NOT NULL UNIQUE,
+                status INTEGER NOT NULL DEFAULT 0 CHECK (status IN (0, 1, 2, 3))
             )
         """)
 
