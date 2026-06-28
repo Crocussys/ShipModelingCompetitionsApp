@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QLineEdit,
     QMessageBox,
+    QHBoxLayout,
 )
 
 from database import (
@@ -25,11 +26,13 @@ class SelectCompetitionPage(QWidget):
         self.select_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.combo_box = QComboBox()
+        self.combo_box.setFixedWidth(350)
 
         self.next_button = QPushButton("Далее")
         self.next_button.clicked.connect(self.go_next)
+        self.next_button.setFixedWidth(150)
 
-        self.separator_label = QLabel("----или----")
+        self.separator_label = QLabel("---- или ----")
         self.separator_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.create_label = QLabel("Создайте новое соревнование")
@@ -37,26 +40,43 @@ class SelectCompetitionPage(QWidget):
 
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("Название соревнования")
+        self.name_input.setFixedWidth(350)
 
         self.create_button = QPushButton("Создать")
         self.create_button.clicked.connect(self.create_new_competition)
+        self.create_button.setFixedWidth(150)
 
-        layout = QVBoxLayout()
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        content_layout = QVBoxLayout()
+        content_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        layout.addWidget(self.select_label)
-        layout.addWidget(self.combo_box)
-        layout.addWidget(self.next_button)
+        content_layout.addWidget(self.select_label)
+        content_layout.addWidget(self.combo_box)
+        content_layout.addWidget(
+            self.next_button,
+            alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
-        layout.addSpacing(20)
-        layout.addWidget(self.separator_label)
-        layout.addSpacing(20)
+        content_layout.addSpacing(20)
+        content_layout.addWidget(self.separator_label)
+        content_layout.addSpacing(20)
 
-        layout.addWidget(self.create_label)
-        layout.addWidget(self.name_input)
-        layout.addWidget(self.create_button)
+        content_layout.addWidget(self.create_label)
+        content_layout.addWidget(self.name_input)
+        content_layout.addWidget(
+            self.create_button,
+            alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
-        self.setLayout(layout)
+        content_widget = QWidget()
+        content_widget.setLayout(content_layout)
+        content_widget.setMaximumWidth(450)   # подбери по вкусу
+
+        main_layout = QHBoxLayout()
+        main_layout.addStretch()
+        main_layout.addWidget(content_widget)
+        main_layout.addStretch()
+
+        self.setLayout(main_layout)
 
         self.load_competitions()
 

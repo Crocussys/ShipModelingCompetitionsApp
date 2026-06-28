@@ -174,12 +174,17 @@ def init_database():
                 competition_judge_id INTEGER NOT NULL,
                 category_id INTEGER NOT NULL,
                 group_id INTEGER NOT NULL,
-                status INTEGER NOT NULL DEFAULT 0
-                    CHECK (status IN (0, 1, 2)),
+                status INTEGER NOT NULL DEFAULT 0 CHECK (status IN (0, 1, 2)),
+
+                UNIQUE (
+                    competition_judge_id,
+                    category_id,
+                    group_id
+                ),
 
                 FOREIGN KEY (competition_judge_id)
                     REFERENCES competition_judges(id)
-                    ON DELETE RESTRICT,
+                    ON DELETE CASCADE,
 
                 FOREIGN KEY (category_id)
                     REFERENCES ship_categories(id)
@@ -197,10 +202,10 @@ def init_database():
                 stand_protocol_id INTEGER NOT NULL,
                 competition_team_participant_ship_id INTEGER NOT NULL,
 
-                execution_score INTEGER NOT NULL CHECK (execution_score BETWEEN 0 AND 100),
-                impression_score INTEGER NOT NULL CHECK (impression_score BETWEEN 0 AND 100),
-                work_volume_score INTEGER NOT NULL CHECK (work_volume_score BETWEEN 0 AND 100),
-                compliance_score INTEGER NOT NULL CHECK (compliance_score BETWEEN 0 AND 100),
+                execution_score INTEGER NOT NULL CHECK (execution_score BETWEEN 0 AND 50),
+                impression_score INTEGER NOT NULL CHECK (impression_score BETWEEN 0 AND 10),
+                work_volume_score INTEGER NOT NULL CHECK (work_volume_score BETWEEN 0 AND 20),
+                compliance_score INTEGER NOT NULL CHECK (compliance_score BETWEEN 0 AND 20),
 
                 UNIQUE (
                     stand_protocol_id,
@@ -215,6 +220,71 @@ def init_database():
                     REFERENCES competition_team_participant_ships(id)
                     ON DELETE CASCADE
             )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS start_protocols (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                competition_judge_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
+                group_id INTEGER NOT NULL,
+                status INTEGER NOT NULL DEFAULT 0
+                    CHECK (status IN (0, 1, 2)),
+
+                UNIQUE (
+                    competition_judge_id,
+                    category_id,
+                    group_id
+                ),
+
+                FOREIGN KEY (competition_judge_id)
+                    REFERENCES competition_judges(id)
+                    ON DELETE CASCADE,
+
+                FOREIGN KEY (category_id)
+                    REFERENCES ship_categories(id),
+
+                FOREIGN KEY (group_id)
+                    REFERENCES groups(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS start_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                start_protocol_id INTEGER NOT NULL,
+                competition_team_participant_ship_id INTEGER NOT NULL,
+                attempt INTEGER NOT NULL
+                    CHECK (attempt IN (1, 2, 3)),
+
+                forward_gate_1 INTEGER NOT NULL CHECK (forward_gate_1 BETWEEN 0 AND 6),
+                forward_gate_2 INTEGER NOT NULL CHECK (forward_gate_2 BETWEEN 0 AND 9),
+                forward_gate_3 INTEGER NOT NULL CHECK (forward_gate_3 BETWEEN 0 AND 6),
+                forward_gate_4 INTEGER NOT NULL CHECK (forward_gate_4 BETWEEN 0 AND 6),
+                forward_gate_5 INTEGER NOT NULL CHECK (forward_gate_5 BETWEEN 0 AND 9),
+                forward_gate_6 INTEGER NOT NULL CHECK (forward_gate_6 BETWEEN 0 AND 6),
+                forward_gate_7 INTEGER NOT NULL CHECK (forward_gate_7 BETWEEN 0 AND 6),
+                forward_gate_8 INTEGER NOT NULL CHECK (forward_gate_8 BETWEEN 0 AND 9),
+                forward_gate_9 INTEGER NOT NULL CHECK (forward_gate_9 BETWEEN 0 AND 6),
+                forward_gate_10 INTEGER NOT NULL CHECK (forward_gate_10 BETWEEN 0 AND 6),
+                forward_gate_11 INTEGER NOT NULL CHECK (forward_gate_11 BETWEEN 0 AND 9),
+                reverse INTEGER NOT NULL CHECK (reverse BETWEEN 0 AND 12),
+                mooring INTEGER NOT NULL CHECK (mooring BETWEEN 0 AND 10),
+
+                UNIQUE (
+                    start_protocol_id,
+                    competition_team_participant_ship_id,
+                    attempt
+                ),
+
+                FOREIGN KEY (start_protocol_id)
+                    REFERENCES start_protocols(id)
+                    ON DELETE CASCADE,
+
+                FOREIGN KEY (competition_team_participant_ship_id)
+                    REFERENCES competition_team_participant_ships(id)
+                    ON DELETE CASCADE
+            );
         """)
 
 

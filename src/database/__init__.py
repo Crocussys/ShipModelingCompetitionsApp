@@ -9,3 +9,4 @@ from .teams import *
 from .participants import *
 from .ships import *
 from .stand_protocols import *
+from .start_protocols import *

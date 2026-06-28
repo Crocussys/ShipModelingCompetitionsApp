@@ -20,6 +20,8 @@ from database import (
     COMPETITION_STATUS_REGISTRATION,
     COMPETITION_STATUS_PRIMARY_PROTOCOLS,
     COMPETITION_STATUS_SECONDARY_PROTOCOLS,
+    generate_stand_protocols_for_competition,
+    generate_start_protocols_for_competition,
 )
 
 from ui.judges_tab import JudgesTab
@@ -29,6 +31,8 @@ from ui.districts_tab import DistrictsTab
 from ui.teams_tab import TeamsTab
 from ui.participants_tab import ParticipantsTab
 from ui.ships_tab import ShipsTab
+from ui.stand_tab import StandTab
+from ui.start_tab import StartTab
 
 
 class CompetitionPage(QWidget):
@@ -58,11 +62,15 @@ class CompetitionPage(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         )
 
-        self.status_title_label  = QLabel()
-        self.status_title_label .setAlignment(
+        self.status_title_label = QLabel("Статус:")
+        self.status_title_label.setAlignment(
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         )
+
         self.status_value_label = QLabel()
+        self.status_value_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
 
         self.next_status_button = QPushButton()
         self.next_status_button.setSizePolicy(
@@ -104,6 +112,20 @@ class CompetitionPage(QWidget):
         self.teams_tab = TeamsTab(app_window)
         self.participants_tab = ParticipantsTab(app_window)
         self.ships_tab = ShipsTab(app_window)
+        self.stand_tab = StandTab(app_window)
+        self.start_tab = StartTab(app_window)
+
+        self.tab_order = [
+            self.groups_tab,
+            self.categories_tab,
+            self.districts_tab,
+            self.judges_tab,
+            self.teams_tab,
+            self.participants_tab,
+            self.ships_tab,
+            self.stand_tab,
+            self.start_tab,
+        ]
 
         self.tab_titles = {
             self.groups_tab: "Группы",
@@ -113,6 +135,8 @@ class CompetitionPage(QWidget):
             self.teams_tab: "Команды",
             self.participants_tab: "Участники",
             self.ships_tab: "Судна",
+            self.stand_tab: "Стенд",
+            self.start_tab: "Стартовый",
         }
 
         self.tabs.addTab(self.groups_tab, "Группы")
@@ -122,6 +146,8 @@ class CompetitionPage(QWidget):
         self.tabs.addTab(self.teams_tab, "Команды")
         self.tabs.addTab(self.participants_tab, "Участники")
         self.tabs.addTab(self.ships_tab, "Судна")
+        self.tabs.addTab(self.stand_tab, "Стенд")
+        self.tabs.addTab(self.start_tab, "Стартовый")
 
         self.tabs.currentChanged.connect(self.on_tab_changed)
 
@@ -146,6 +172,8 @@ class CompetitionPage(QWidget):
         self.participants_tab.load_participants()
         self.ships_tab.load_filter_values()
         self.ships_tab.load_ships()
+        self.stand_tab.load_stand_protocols()
+        self.start_tab.load_start_protocols()
 
     def on_tab_changed(self, index):
         current_widget = self.tabs.widget(index)
@@ -219,6 +247,10 @@ class CompetitionPage(QWidget):
 
         if status >= COMPETITION_STATUS_SECONDARY_PROTOCOLS:
             return
+        
+        if status == COMPETITION_STATUS_REGISTRATION:
+            generate_stand_protocols_for_competition(competition_id)
+            generate_start_protocols_for_competition(competition_id)
 
         update_competition_status(competition_id, status + 1)
 
@@ -228,51 +260,54 @@ class CompetitionPage(QWidget):
         index = self.tabs.indexOf(widget)
 
         if visible and index == -1:
-            self.tabs.addTab(widget, self.tab_titles[widget])
+            insert_index = 0
+
+            for tab_widget in self.tab_order:
+                if tab_widget == widget:
+                    break
+
+                if self.tabs.indexOf(tab_widget) != -1:
+                    insert_index += 1
+
+            self.tabs.insertTab(
+                insert_index,
+                widget,
+                self.tab_titles[widget]
+            )
 
         elif not visible and index != -1:
             self.tabs.removeTab(index)
 
     def update_tabs_visibility(self):
         if self.advanced_mode_checkbox.isChecked():
-            for widget in self.tab_titles:
+            for widget in self.tab_order:
                 self.set_tab_visible(widget, True)
             return
-        
+
         status = self.current_status
 
-        setup_tabs = [
-            self.groups_tab,
-            self.categories_tab,
-            self.districts_tab,
-            self.judges_tab,
-        ]
-
-        registration_tabs = [
-            self.groups_tab,
-            self.categories_tab,
-            self.districts_tab,
-            self.judges_tab,
-            self.teams_tab,
-            self.participants_tab,
-            self.ships_tab,
-        ]
-
-        protocols_tabs = [
-            self.judges_tab,
-            self.teams_tab,
-            self.participants_tab,
-            self.ships_tab,
-        ]
-
         if status == COMPETITION_STATUS_SETUP:
-            visible_tabs = setup_tabs
-        elif status == COMPETITION_STATUS_REGISTRATION:
-            visible_tabs = registration_tabs
-        else:
-            visible_tabs = protocols_tabs
+            visible_tabs = [
+                self.judges_tab,
+            ]
 
-        for widget in self.tab_titles:
+        elif status == COMPETITION_STATUS_REGISTRATION:
+            visible_tabs = [
+                self.teams_tab,
+                self.participants_tab,
+                self.ships_tab,
+            ]
+
+        elif status == COMPETITION_STATUS_PRIMARY_PROTOCOLS:
+            visible_tabs = [
+                self.stand_tab,
+                self.start_tab,
+            ]
+            
+        else:
+            visible_tabs = []
+
+        for widget in self.tab_order:
             self.set_tab_visible(widget, widget in visible_tabs)
 
     def change_status_from_combo(self):
