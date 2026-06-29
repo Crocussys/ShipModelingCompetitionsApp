@@ -148,4 +148,34 @@ def get_registered_participants_for_combo(competition_id: int):
             WHERE ct.competition_id = ?
             ORDER BY p.full_name
         """, (competition_id,)).fetchall()
-    
+
+
+def get_registered_participants_for_combo(
+    competition_id: int,
+    competition_team_id: int | None = None,
+    group_id: int | None = None,
+):
+    with get_connection() as conn:
+        query = """
+            SELECT
+                ctp.id,
+                p.full_name
+            FROM competition_team_participants ctp
+            JOIN participants p ON p.id = ctp.participant_id
+            JOIN competition_teams ct ON ct.id = ctp.competition_team_id
+            WHERE ct.competition_id = ?
+        """
+
+        params = [competition_id]
+
+        if competition_team_id is not None:
+            query += " AND ctp.competition_team_id = ?"
+            params.append(competition_team_id)
+
+        if group_id is not None:
+            query += " AND ctp.group_id = ?"
+            params.append(group_id)
+
+        query += " ORDER BY p.full_name"
+
+        return conn.execute(query, params).fetchall()

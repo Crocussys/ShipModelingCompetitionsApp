@@ -161,7 +161,11 @@ class StartTab(QWidget):
         return int(self.table.item(row, 0).text())
 
     def print_protocol(self):
-        pass
+        QMessageBox.information(
+            self,
+            "Печать",
+            "Это пока не работает"
+        )
 
     def mark_as_given(self):
         protocol_id = self.get_selected_protocol_id()

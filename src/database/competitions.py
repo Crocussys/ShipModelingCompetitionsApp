@@ -52,3 +52,10 @@ def update_competition_status(competition_id: int, status: int):
             SET status = ?
             WHERE id = ?
         """, (status, competition_id))
+
+def delete_competition(competition_id: int):
+    with get_connection() as conn:
+        conn.execute("""
+            DELETE FROM competitions
+            WHERE id = ?
+        """, (competition_id,))

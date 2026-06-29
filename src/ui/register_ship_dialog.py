@@ -8,7 +8,11 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from database import get_registered_participants_for_combo
+from database import (
+    get_registered_competition_teams,
+    get_groups,
+    get_registered_participants_for_combo,
+)
 
 
 class RegisterShipDialog(QDialog):
@@ -18,14 +22,19 @@ class RegisterShipDialog(QDialog):
         self.competition_id = competition_id
         self.setWindowTitle("Регистрация судна")
 
+        self.team_combo = QComboBox()
+        self.group_combo = QComboBox()
         self.participant_combo = QComboBox()
+
+        self.team_combo.currentIndexChanged.connect(self.load_participants)
+        self.group_combo.currentIndexChanged.connect(self.load_participants)
+
         self.channel_input = QLineEdit()
         self.channel_input.setPlaceholderText("Канал/частота")
 
-        for ctp_id, display_text in get_registered_participants_for_combo(competition_id):
-            self.participant_combo.addItem(display_text, ctp_id)
-
         form_layout = QFormLayout()
+        form_layout.addRow("Команда:", self.team_combo)
+        form_layout.addRow("Группа:", self.group_combo)
         form_layout.addRow("Участник:", self.participant_combo)
         form_layout.addRow("Канал/частота:", self.channel_input)
 
@@ -43,12 +52,22 @@ class RegisterShipDialog(QDialog):
 
         self.setLayout(layout)
 
+        self.load_data()
+
     def validate_and_accept(self):
+        if self.team_combo.currentData() is None:
+            QMessageBox.warning(self, "Ошибка", "Нет зарегистрированных команд")
+            return
+
+        if self.group_combo.currentData() is None:
+            QMessageBox.warning(self, "Ошибка", "Нет групп")
+            return
+
         if self.participant_combo.currentData() is None:
             QMessageBox.warning(
                 self,
                 "Ошибка",
-                "Нет зарегистрированных участников"
+                "Нет участников для выбранной команды и группы"
             )
             return
 
@@ -59,3 +78,41 @@ class RegisterShipDialog(QDialog):
             self.participant_combo.currentData(),
             self.channel_input.text().strip(),
         )
+    
+    def load_data(self):
+        self.load_teams()
+        self.load_groups()
+        self.load_participants()
+
+
+    def load_teams(self):
+        self.team_combo.clear()
+
+        for competition_team_id, short_name in get_registered_competition_teams(
+            self.competition_id
+        ):
+            self.team_combo.addItem(short_name, competition_team_id)
+
+
+    def load_groups(self):
+        self.group_combo.clear()
+
+        for group_id, name in get_groups():
+            self.group_combo.addItem(name, group_id)
+
+
+    def load_participants(self):
+        self.participant_combo.clear()
+
+        competition_team_id = self.team_combo.currentData()
+        group_id = self.group_combo.currentData()
+
+        if competition_team_id is None or group_id is None:
+            return
+
+        for competition_team_participant_id, full_name in get_registered_participants_for_combo(
+            self.competition_id,
+            competition_team_id=competition_team_id,
+            group_id=group_id,
+        ):
+            self.participant_combo.addItem(full_name, competition_team_participant_id)

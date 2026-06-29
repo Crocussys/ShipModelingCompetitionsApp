@@ -173,9 +173,37 @@ def get_summary_rows(
 
             movement_score = calculate_average(attempt_scores)
 
-            total_score = None
-            if stand_average is not None and movement_score is not None:
-                total_score = stand_average + movement_score
+            fsr_attempts = conn.execute("""
+                SELECT
+                    attempt,
+                    laps,
+                    seconds
+                FROM fsr_results fr
+                JOIN fsr_protocols fp
+                    ON fp.id = fr.fsr_protocol_id
+                WHERE fp.competition_team_participant_ship_id = ?
+                ORDER BY attempt
+            """, (registered_ship_id,)).fetchall()
+
+            laps = ["", "", ""]
+            seconds = ["", "", ""]
+
+            total_laps = None
+
+            for attempt, lap_count, second_count in fsr_attempts:
+                laps[attempt - 1] = lap_count
+                seconds[attempt - 1] = second_count
+
+                if total_laps is None:
+                    total_laps = 0
+
+                total_laps += lap_count
+
+            total_score = (
+                (stand_average or 0)
+                + (movement_score or 0)
+                + (total_laps or 0)
+            )
 
             rows.append({
                 "ship_id": ship_id,
@@ -191,7 +219,58 @@ def get_summary_rows(
                 "stand_average": stand_average,
                 "attempt_scores": attempt_scores,
                 "movement_score": movement_score,
+                "laps": laps,
+                "seconds": seconds,
+                "total_laps": total_laps,
                 "total_score": total_score,
             })
 
+    assign_places_and_team_scores(rows)
+    
+    rows.sort(
+        key=lambda row: (
+            -row["total_score"],
+            row["participant_full_name"],
+        )
+    )
+
     return stand_judges, rows
+
+
+def assign_places_and_team_scores(rows: list[dict]):
+    groups = {}
+
+    for row in rows:
+        key = (
+            row["category_name"],
+            row["group_name"],
+        )
+        groups.setdefault(key, []).append(row)
+
+    for group_rows in groups.values():
+        group_rows.sort(
+            key=lambda row: (
+                -row["total_score"],
+                row["participant_full_name"],
+            )
+        )
+
+        max_score = group_rows[0]["total_score"] if group_rows else 0
+
+        previous_score = None
+        previous_place = None
+
+        for index, row in enumerate(group_rows, start=1):
+            current_score = row["total_score"]
+
+            if previous_score is not None and current_score == previous_score:
+                row["place"] = previous_place
+            else:
+                row["place"] = index
+                previous_place = index
+                previous_score = current_score
+
+            if max_score == 0:
+                row["team_score"] = 0
+            else:
+                row["team_score"] = current_score / max_score * 200

@@ -215,10 +215,19 @@ class StartResultDialog(QDialog):
             for attempt in range(1, 4):
                 column = start_column + attempt - 1
 
+                saved_values = get_start_result_values(
+                    self.protocol_id,
+                    registered_ship_id,
+                    attempt,
+                )
+
                 checkbox = QCheckBox(str(attempt))
-                checkbox.setChecked(True)
+                checkbox.setChecked(saved_values is not None)
                 checkbox.toggled.connect(
-                    lambda _checked, c=column: self.update_totals(c)
+                    lambda checked,
+                    rsi=registered_ship_id,
+                    a=attempt,
+                    c=column: self.on_attempt_checkbox_toggled(rsi, a, c, checked)
                 )
 
                 checkbox_widget = QWidget()
@@ -268,7 +277,7 @@ class StartResultDialog(QDialog):
             if saved_values is not None:
                 spin_box.setValue(saved_values[score_index])
             else:
-                spin_box.setValue(maximum)
+                spin_box.setValue(0)
 
             spin_box.valueChanged.connect(
                 lambda _value, c=column: self.update_totals(c)
@@ -371,6 +380,29 @@ class StartResultDialog(QDialog):
                 "Ошибка",
                 f"Не удалось сохранить результаты:\n\n{error}"
             )
+
+    def set_attempt_scores(self, registered_ship_id: int, attempt: int, value_mode: str):
+        widgets = self.score_widgets.get((registered_ship_id, attempt), [])
+
+        for widget in widgets:
+            if value_mode == "max":
+                widget.setValue(widget.maximum())
+            else:
+                widget.setValue(0)
+
+    def on_attempt_checkbox_toggled(
+        self,
+        registered_ship_id: int,
+        attempt: int,
+        column: int,
+        checked: bool,
+    ):
+        if checked:
+            self.set_attempt_scores(registered_ship_id, attempt, "max")
+        else:
+            self.set_attempt_scores(registered_ship_id, attempt, "zero")
+
+        self.update_totals(column)
 
     @staticmethod
     def format_participant_name(full_name: str) -> str:

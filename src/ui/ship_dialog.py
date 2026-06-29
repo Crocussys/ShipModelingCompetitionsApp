@@ -85,7 +85,7 @@ class ShipDialog(QDialog):
             category_id = row[0]
             name = row[1]
 
-            self.category_filter_combo.addItem(name, category_id)
+            self.category_combo.addItem(name, category_id)
 
         if selected_category_id is not None:
             index = self.category_combo.findData(selected_category_id)

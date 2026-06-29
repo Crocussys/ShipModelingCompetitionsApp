@@ -137,16 +137,26 @@ class SummaryTab(QWidget):
         ]
 
         headers.extend([
-            judge_name for _judge_id, judge_name in stand_judges
+            str(index)
+            for index in range(1, len(stand_judges) + 1)
         ])
 
         headers.extend([
-            "Стенд среднее",
+            "Стенд ср.",
             "1",
             "2",
             "3",
             "Балл за ход",
+            "1, кр",
+            "1, сек",
+            "2, кр",
+            "2, сек",
+            "3, кр",
+            "3, сек",
+            "Сумма кругов",
             "Сумма",
+            "Место",
+            "В команду",
         ])
 
         self.table.setColumnCount(len(headers))
@@ -174,7 +184,16 @@ class SummaryTab(QWidget):
                 row["attempt_scores"][1],
                 row["attempt_scores"][2],
                 row["movement_score"],
+                row["laps"][0],
+                row["seconds"][0],
+                row["laps"][1],
+                row["seconds"][1],
+                row["laps"][2],
+                row["seconds"][2],
+                row["total_laps"],
                 row["total_score"],
+                row["place"],
+                row["team_score"],
             ])
 
             for column_index, value in enumerate(values):

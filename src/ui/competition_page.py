@@ -9,12 +9,14 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QCheckBox,
     QComboBox,
+    QMessageBox,
 )
 
 from database import (
     get_competition,
     get_competition_status_name,
     update_competition_status,
+    delete_competition,
     COMPETITION_STATUSES,
     COMPETITION_STATUS_SETUP,
     COMPETITION_STATUS_REGISTRATION,
@@ -48,22 +50,22 @@ class CompetitionPage(QWidget):
         self.back_button.clicked.connect(self.go_back)
         self.back_button.setFixedWidth(100)
 
-        back_layout = QHBoxLayout()
-        back_layout.addWidget(self.back_button)
-        back_layout.addStretch()
+        self.competition_name_label = QLabel()
+        self.competition_name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        font = self.competition_name_label.font()
+        font.setBold(True)
+        font.setPointSize(font.pointSize() + 2)
+        self.competition_name_label.setFont(font)
 
         self.advanced_mode_checkbox = QCheckBox("Расширенный режим")
         self.advanced_mode_checkbox.toggled.connect(self.update_page)
 
         back_layout = QHBoxLayout()
         back_layout.addWidget(self.back_button)
-        back_layout.addStretch()
+        back_layout.addStretch(1)
+        back_layout.addWidget(self.competition_name_label)
+        back_layout.addStretch(1)
         back_layout.addWidget(self.advanced_mode_checkbox)
-
-        self.competition_name_label = QLabel()
-        self.competition_name_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
 
         self.status_title_label = QLabel("Статус:")
         self.status_title_label.setAlignment(
@@ -162,11 +164,19 @@ class CompetitionPage(QWidget):
 
         self.tabs.currentChanged.connect(self.on_tab_changed)
 
+        self.delete_competition_button = QPushButton("Удалить соревнование")
+        self.delete_competition_button.clicked.connect(self.delete_current_competition)
+        self.delete_competition_button.setVisible(False)
+
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(self.delete_competition_button)
+
         layout = QVBoxLayout()
         layout.addLayout(back_layout)
-        layout.addWidget(self.competition_name_label)
         layout.addLayout(status_layout)
         layout.addWidget(self.tabs)
+        layout.addLayout(bottom_layout)
 
         self.setLayout(layout)
 
@@ -189,6 +199,10 @@ class CompetitionPage(QWidget):
         self.fsr_tab.load_fsr_protocols()
         self.summary_tab.load_filter_values()
         self.summary_tab.load_summary()
+        
+        self.delete_competition_button.setVisible(
+            self.advanced_mode_checkbox.isChecked()
+        )
 
     def on_tab_changed(self, index):
         current_widget = self.tabs.widget(index)
@@ -204,6 +218,10 @@ class CompetitionPage(QWidget):
 
         if hasattr(current_widget, "load_districts"):
             current_widget.load_districts()
+
+        if current_widget is self.summary_tab:
+            self.summary_tab.load_filter_values()
+            self.summary_tab.load_summary()
 
     def go_back(self):
         self.app_window.show_select_page()
@@ -345,3 +363,41 @@ class CompetitionPage(QWidget):
 
         update_competition_status(competition_id, status)
         self.update_page()
+
+    def delete_current_competition(self):
+        competition_id = self.app_window.selected_competition_id
+
+        if competition_id is None:
+            return
+
+        competition = get_competition(competition_id)
+
+        if competition is None:
+            return
+
+        _competition_id, name, _status = competition
+
+        result = QMessageBox.question(
+            self,
+            "Удаление соревнования",
+            f"Удалить соревнование «{name}»?\n\n"
+            "Это действие нельзя отменить.",
+            QMessageBox.StandardButton.Yes |
+            QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+
+        if result != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            delete_competition(competition_id)
+            self.app_window.selected_competition_id = None
+            self.app_window.show_select_page()
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось удалить соревнование:\n\n{error}"
+            )
