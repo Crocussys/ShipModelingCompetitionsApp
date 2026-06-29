@@ -12,26 +12,26 @@ from PySide6.QtWidgets import (
 )
 
 from database import (
-    get_start_protocols,
-    get_start_protocol_status_name,
-    update_start_protocol_status,
-    START_PROTOCOL_GIVEN,
-    get_protocol_1_or_2_categories,
+    get_fsr_protocols,
+    get_fsr_protocol_status_name,
+    get_protocol_3_categories,
     get_groups,
 )
 
-from ui.start_result_dialog import StartResultDialog
+from ui.fsr_result_dialog import FsrResultDialog
 
 
-class StartTab(QWidget):
+class FsrTab(QWidget):
     def __init__(self, app_window):
         super().__init__()
 
         self.app_window = app_window
 
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Поиск по ФИО судьи или участника")
-        self.search_input.textChanged.connect(self.load_start_protocols)
+        self.search_input.setPlaceholderText(
+            "Поиск по ФИО участника, названию или модели судна"
+        )
+        self.search_input.textChanged.connect(self.load_fsr_protocols)
 
         self.category_filter_checkbox = QCheckBox("Категория")
         self.category_filter_combo = QComboBox()
@@ -39,17 +39,13 @@ class StartTab(QWidget):
         self.group_filter_checkbox = QCheckBox("Группа")
         self.group_filter_combo = QComboBox()
 
-        self.category_filter_checkbox.toggled.connect(self.load_start_protocols)
-        self.category_filter_combo.currentIndexChanged.connect(self.load_start_protocols)
-        self.group_filter_checkbox.toggled.connect(self.load_start_protocols)
-        self.group_filter_combo.currentIndexChanged.connect(self.load_start_protocols)
+        self.category_filter_checkbox.toggled.connect(self.load_fsr_protocols)
+        self.category_filter_combo.currentIndexChanged.connect(self.load_fsr_protocols)
 
-        self.print_button = QPushButton("Распечатать")
-        self.given_button = QPushButton("Отдан")
+        self.group_filter_checkbox.toggled.connect(self.load_fsr_protocols)
+        self.group_filter_combo.currentIndexChanged.connect(self.load_fsr_protocols)
+
         self.fill_button = QPushButton("Заполнить")
-
-        self.print_button.clicked.connect(self.print_protocol)
-        self.given_button.clicked.connect(self.mark_as_given)
         self.fill_button.clicked.connect(self.fill_protocol)
 
         filters_layout = QHBoxLayout()
@@ -60,16 +56,16 @@ class StartTab(QWidget):
         filters_layout.addWidget(self.group_filter_combo)
 
         actions_layout = QHBoxLayout()
-        actions_layout.addWidget(self.print_button)
-        actions_layout.addWidget(self.given_button)
         actions_layout.addWidget(self.fill_button)
         actions_layout.addStretch()
 
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
+        self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels([
             "ID",
-            "Судья",
+            "ФИО",
+            "Название",
+            "Модель",
             "Категория",
             "Группа",
             "Статус",
@@ -86,7 +82,7 @@ class StartTab(QWidget):
         self.setLayout(layout)
 
         self.load_filter_values()
-        self.load_start_protocols()
+        self.load_fsr_protocols()
 
     def load_filter_values(self):
         self.category_filter_combo.blockSignals(True)
@@ -95,7 +91,7 @@ class StartTab(QWidget):
         self.category_filter_combo.clear()
         self.group_filter_combo.clear()
 
-        for category_id, name in get_protocol_1_or_2_categories():
+        for category_id, name in get_protocol_3_categories():
             self.category_filter_combo.addItem(name, category_id)
 
         for group_id, name in get_groups():
@@ -104,7 +100,7 @@ class StartTab(QWidget):
         self.category_filter_combo.blockSignals(False)
         self.group_filter_combo.blockSignals(False)
 
-    def load_start_protocols(self):
+    def load_fsr_protocols(self):
         competition_id = self.app_window.selected_competition_id
 
         if competition_id is None:
@@ -120,7 +116,7 @@ class StartTab(QWidget):
         if self.group_filter_checkbox.isChecked():
             group_id = self.group_filter_combo.currentData()
 
-        protocols = get_start_protocols(
+        protocols = get_fsr_protocols(
             competition_id=competition_id,
             search=self.search_input.text(),
             category_id=category_id,
@@ -131,21 +127,25 @@ class StartTab(QWidget):
 
         for row_index, (
             protocol_id,
-            judge_full_name,
+            full_name,
+            ship_name,
+            ship_model,
             category_name,
             group_name,
             status,
-            category_id,
-            group_id,
+            _category_id,
+            _group_id,
         ) in enumerate(protocols):
             self.table.setItem(row_index, 0, QTableWidgetItem(str(protocol_id)))
-            self.table.setItem(row_index, 1, QTableWidgetItem(judge_full_name))
-            self.table.setItem(row_index, 2, QTableWidgetItem(category_name))
-            self.table.setItem(row_index, 3, QTableWidgetItem(group_name))
+            self.table.setItem(row_index, 1, QTableWidgetItem(full_name))
+            self.table.setItem(row_index, 2, QTableWidgetItem(ship_name))
+            self.table.setItem(row_index, 3, QTableWidgetItem(ship_model))
+            self.table.setItem(row_index, 4, QTableWidgetItem(category_name))
+            self.table.setItem(row_index, 5, QTableWidgetItem(group_name))
             self.table.setItem(
                 row_index,
-                4,
-                QTableWidgetItem(get_start_protocol_status_name(status))
+                6,
+                QTableWidgetItem(get_fsr_protocol_status_name(status))
             )
 
         self.table.resizeColumnsToContents()
@@ -160,28 +160,16 @@ class StartTab(QWidget):
         row = selected_rows[0].row()
         return int(self.table.item(row, 0).text())
 
-    def print_protocol(self):
-        pass
-
-    def mark_as_given(self):
-        protocol_id = self.get_selected_protocol_id()
-
-        if protocol_id is None:
-            return
-
-        update_start_protocol_status(protocol_id, START_PROTOCOL_GIVEN)
-        self.load_start_protocols()
-
     def fill_protocol(self):
         protocol_id = self.get_selected_protocol_id()
 
         if protocol_id is None:
             return
 
-        dialog = StartResultDialog(
+        dialog = FsrResultDialog(
             self,
             protocol_id=protocol_id,
         )
 
         if dialog.exec() == dialog.DialogCode.Accepted:
-            self.load_start_protocols()
+            self.load_fsr_protocols()

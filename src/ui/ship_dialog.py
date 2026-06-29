@@ -81,8 +81,11 @@ class ShipDialog(QDialog):
     def load_categories(self, selected_category_id=None):
         self.category_combo.clear()
 
-        for category_id, category_name in get_ship_categories():
-            self.category_combo.addItem(category_name, category_id)
+        for row in get_ship_categories():
+            category_id = row[0]
+            name = row[1]
+
+            self.category_filter_combo.addItem(name, category_id)
 
         if selected_category_id is not None:
             index = self.category_combo.findData(selected_category_id)

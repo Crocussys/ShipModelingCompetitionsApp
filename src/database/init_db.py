@@ -50,7 +50,10 @@ def init_database():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS ship_categories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE
+                name TEXT NOT NULL UNIQUE,
+                protocol_1 INTEGER NOT NULL DEFAULT 0,
+                protocol_2 INTEGER NOT NULL DEFAULT 0,
+                protocol_3 INTEGER NOT NULL DEFAULT 0
             )
         """)
 
@@ -285,6 +288,36 @@ def init_database():
                     REFERENCES competition_team_participant_ships(id)
                     ON DELETE CASCADE
             );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS fsr_protocols (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                competition_team_participant_ship_id INTEGER NOT NULL,
+                status INTEGER NOT NULL DEFAULT 0 CHECK (status IN (0, 1)),
+
+                UNIQUE (competition_team_participant_ship_id),
+
+                FOREIGN KEY (competition_team_participant_ship_id)
+                    REFERENCES competition_team_participant_ships(id)
+                    ON DELETE CASCADE
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS fsr_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fsr_protocol_id INTEGER NOT NULL,
+                attempt INTEGER NOT NULL CHECK (attempt IN (1, 2, 3)),
+                laps INTEGER NOT NULL CHECK (laps >= 0),
+                seconds INTEGER NOT NULL CHECK (seconds >= 0),
+
+                UNIQUE (fsr_protocol_id, attempt),
+
+                FOREIGN KEY (fsr_protocol_id)
+                    REFERENCES fsr_protocols(id)
+                    ON DELETE CASCADE
+            )
         """)
 
 

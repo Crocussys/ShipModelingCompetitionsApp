@@ -36,6 +36,44 @@ def get_start_protocol_status_name(status: int) -> str:
 
 def generate_start_protocols_for_competition(competition_id: int):
     with get_connection() as conn:
+        conn.execute("""
+            DELETE FROM start_protocols
+            WHERE id IN (
+                SELECT sp.id
+                FROM start_protocols sp
+                JOIN competition_judges cj
+                    ON cj.id = sp.competition_judge_id
+                JOIN ship_categories sc
+                    ON sc.id = sp.category_id
+                WHERE cj.competition_id = ?
+                AND sc.protocol_1 = 0
+                AND sc.protocol_2 = 0
+            )
+        """, (competition_id,))
+
+        conn.execute("""
+            DELETE FROM start_protocols
+            WHERE id IN (
+                SELECT sp.id
+                FROM start_protocols sp
+                JOIN competition_judges cj
+                    ON cj.id = sp.competition_judge_id
+                WHERE cj.competition_id = ?
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM competition_team_participant_ships ctps
+                    JOIN ships s ON s.id = ctps.ship_id
+                    JOIN competition_team_participants ctp
+                        ON ctp.id = ctps.competition_team_participant_id
+                    JOIN competition_teams ct
+                        ON ct.id = ctp.competition_team_id
+                    WHERE ct.competition_id = cj.competition_id
+                        AND s.category_id = sp.category_id
+                        AND ctp.group_id = sp.group_id
+                )
+            )
+        """, (competition_id,))
+        
         start_judges = conn.execute("""
             SELECT id
             FROM competition_judges
@@ -53,11 +91,13 @@ def generate_start_protocols_for_competition(competition_id: int):
                 ctp.group_id
             FROM competition_team_participant_ships ctps
             JOIN ships s ON s.id = ctps.ship_id
+            JOIN ship_categories sc ON sc.id = s.category_id
             JOIN competition_team_participants ctp
                 ON ctp.id = ctps.competition_team_participant_id
             JOIN competition_teams ct
                 ON ct.id = ctp.competition_team_id
             WHERE ct.competition_id = ?
+            AND (sc.protocol_1 = 1 OR sc.protocol_2 = 1)
         """, (competition_id,)).fetchall()
 
         for (competition_judge_id,) in start_judges:

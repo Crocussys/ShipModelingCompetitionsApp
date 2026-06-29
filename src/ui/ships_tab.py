@@ -122,7 +122,10 @@ class ShipsTab(QWidget):
         self.category_filter_combo.blockSignals(True)
         self.category_filter_combo.clear()
 
-        for category_id, name in get_ship_categories():
+        for row in get_ship_categories():
+            category_id = row[0]
+            name = row[1]
+
             self.category_filter_combo.addItem(name, category_id)
 
         self.category_filter_combo.blockSignals(False)

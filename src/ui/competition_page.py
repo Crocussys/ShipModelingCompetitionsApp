@@ -22,6 +22,7 @@ from database import (
     COMPETITION_STATUS_SECONDARY_PROTOCOLS,
     generate_stand_protocols_for_competition,
     generate_start_protocols_for_competition,
+    generate_fsr_protocols_for_competition,
 )
 
 from ui.judges_tab import JudgesTab
@@ -33,6 +34,7 @@ from ui.participants_tab import ParticipantsTab
 from ui.ships_tab import ShipsTab
 from ui.stand_tab import StandTab
 from ui.start_tab import StartTab
+from ui.fsr_tab import FsrTab
 from ui.summary_tab import SummaryTab
 
 
@@ -115,6 +117,7 @@ class CompetitionPage(QWidget):
         self.ships_tab = ShipsTab(app_window)
         self.stand_tab = StandTab(app_window)
         self.start_tab = StartTab(app_window)
+        self.fsr_tab = FsrTab(app_window)
         self.summary_tab = SummaryTab(app_window)
 
         self.tab_order = [
@@ -127,6 +130,7 @@ class CompetitionPage(QWidget):
             self.ships_tab,
             self.stand_tab,
             self.start_tab,
+            self.fsr_tab,
             self.summary_tab,
         ]
 
@@ -140,6 +144,7 @@ class CompetitionPage(QWidget):
             self.ships_tab: "Судна",
             self.stand_tab: "Стенд",
             self.start_tab: "Стартовый",
+            self.fsr_tab: "FSR",
             self.summary_tab: "Сводная таблица",
         }
 
@@ -152,6 +157,7 @@ class CompetitionPage(QWidget):
         self.tabs.addTab(self.ships_tab, "Судна")
         self.tabs.addTab(self.stand_tab, "Стенд")
         self.tabs.addTab(self.start_tab, "Стартовый")
+        self.tabs.addTab(self.fsr_tab, "FSR")
         self.tabs.addTab(self.summary_tab, "Сводная таблица")
 
         self.tabs.currentChanged.connect(self.on_tab_changed)
@@ -179,6 +185,8 @@ class CompetitionPage(QWidget):
         self.ships_tab.load_ships()
         self.stand_tab.load_stand_protocols()
         self.start_tab.load_start_protocols()
+        self.fsr_tab.load_filter_values()
+        self.fsr_tab.load_fsr_protocols()
         self.summary_tab.load_filter_values()
         self.summary_tab.load_summary()
 
@@ -258,6 +266,7 @@ class CompetitionPage(QWidget):
         if status == COMPETITION_STATUS_REGISTRATION:
             generate_stand_protocols_for_competition(competition_id)
             generate_start_protocols_for_competition(competition_id)
+            generate_fsr_protocols_for_competition(competition_id)
 
         update_competition_status(competition_id, status + 1)
 
@@ -309,6 +318,7 @@ class CompetitionPage(QWidget):
             visible_tabs = [
                 self.stand_tab,
                 self.start_tab,
+                self.fsr_tab,
                 self.summary_tab,
             ]
 

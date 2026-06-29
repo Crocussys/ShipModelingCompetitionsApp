@@ -16,7 +16,7 @@ from database import (
     get_stand_protocol_status_name,
     update_stand_protocol_status,
     STAND_PROTOCOL_GIVEN,
-    get_ship_categories,
+    get_protocol_1_categories,
     get_groups,
 )
 
@@ -97,7 +97,7 @@ class StandTab(QWidget):
         self.category_filter_combo.clear()
         self.group_filter_combo.clear()
 
-        for category_id, name in get_ship_categories():
+        for category_id, name in get_protocol_1_categories():
             self.category_filter_combo.addItem(name, category_id)
 
         for group_id, name in get_groups():
