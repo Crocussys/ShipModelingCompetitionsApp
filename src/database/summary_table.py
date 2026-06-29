@@ -43,6 +43,9 @@ def get_summary_rows(
                 sc.name AS category_name,
                 g.name AS group_name,
                 t.short_name AS team_short_name,
+                d.name AS district_name,
+                t.organization,
+                ct.coach,
                 s.category_id,
                 ctp.group_id,
                 t.id AS team_id
@@ -55,6 +58,7 @@ def get_summary_rows(
             JOIN groups g ON g.id = ctp.group_id
             JOIN competition_teams ct ON ct.id = ctp.competition_team_id
             JOIN teams t ON t.id = ct.team_id
+            JOIN districts d ON d.id = t.district_id
             WHERE ct.competition_id = ?
             ORDER BY sc.name, g.name, p.full_name
         """, (competition_id,)).fetchall()
@@ -84,6 +88,9 @@ def get_summary_rows(
                 category_name,
                 group_name,
                 team_short_name,
+                district_name,
+                organization,
+                coach,
                 ship_category_id,
                 ship_group_id,
                 current_team_id,
@@ -210,6 +217,9 @@ def get_summary_rows(
                 "participant_full_name": participant_full_name,
                 "ship_name": ship_name,
                 "ship_model": ship_model,
+                "district_name": district_name,
+                "organization": organization,
+                "coach": coach,
                 "scale": scale,
                 "channel": channel,
                 "category_name": category_name,

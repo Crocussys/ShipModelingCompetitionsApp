@@ -38,6 +38,8 @@ from ui.stand_tab import StandTab
 from ui.start_tab import StartTab
 from ui.fsr_tab import FsrTab
 from ui.summary_tab import SummaryTab
+from ui.secondary_protocol_tab import SecondaryProtocolTab
+from ui.team_protocol_tab import TeamProtocolTab
 
 
 class CompetitionPage(QWidget):
@@ -121,6 +123,10 @@ class CompetitionPage(QWidget):
         self.start_tab = StartTab(app_window)
         self.fsr_tab = FsrTab(app_window)
         self.summary_tab = SummaryTab(app_window)
+        self.protocol_1_tab = SecondaryProtocolTab(app_window, 1)
+        self.protocol_2_tab = SecondaryProtocolTab(app_window, 2)
+        self.protocol_3_tab = SecondaryProtocolTab(app_window, 3)
+        self.team_protocol_tab = TeamProtocolTab(app_window)
 
         self.tab_order = [
             self.groups_tab,
@@ -134,6 +140,9 @@ class CompetitionPage(QWidget):
             self.start_tab,
             self.fsr_tab,
             self.summary_tab,
+            self.protocol_1_tab,
+            self.protocol_2_tab,
+            self.protocol_3_tab,
         ]
 
         self.tab_titles = {
@@ -148,6 +157,10 @@ class CompetitionPage(QWidget):
             self.start_tab: "Стартовый",
             self.fsr_tab: "FSR",
             self.summary_tab: "Сводная таблица",
+            self.protocol_1_tab: "Протокол №1",
+            self.protocol_2_tab: "Протокол №2",
+            self.protocol_3_tab: "Протокол №3",
+            self.team_protocol_tab: "Командный",
         }
 
         self.tabs.addTab(self.groups_tab, "Группы")
@@ -161,6 +174,10 @@ class CompetitionPage(QWidget):
         self.tabs.addTab(self.start_tab, "Стартовый")
         self.tabs.addTab(self.fsr_tab, "FSR")
         self.tabs.addTab(self.summary_tab, "Сводная таблица")
+        self.tabs.addTab(self.protocol_1_tab, "Протокол №1")
+        self.tabs.addTab(self.protocol_2_tab, "Протокол №2")
+        self.tabs.addTab(self.protocol_3_tab, "Протокол №3")
+        self.tabs.addTab(self.team_protocol_tab, "Командный")
 
         self.tabs.currentChanged.connect(self.on_tab_changed)
 
@@ -199,6 +216,15 @@ class CompetitionPage(QWidget):
         self.fsr_tab.load_fsr_protocols()
         self.summary_tab.load_filter_values()
         self.summary_tab.load_summary()
+        for tab in [
+            self.protocol_1_tab,
+            self.protocol_2_tab,
+            self.protocol_3_tab,
+        ]:
+            tab.load_filter_values()
+            tab.load_protocols()
+        self.team_protocol_tab.load_filter_values()
+        self.team_protocol_tab.load_protocols()
         
         self.delete_competition_button.setVisible(
             self.advanced_mode_checkbox.isChecked()
@@ -343,6 +369,10 @@ class CompetitionPage(QWidget):
         elif status == COMPETITION_STATUS_SECONDARY_PROTOCOLS:
             visible_tabs = [
                 self.summary_tab,
+                self.protocol_1_tab,
+                self.protocol_2_tab,
+                self.protocol_3_tab,
+                self.team_protocol_tab,
             ]
             
         else:
